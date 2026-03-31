@@ -40,7 +40,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.*
 
-// Navigation state
+
 sealed class Screen {
     object TaskList : Screen()
     data class AddEditTask(val task: Task? = null) : Screen()
@@ -245,7 +245,7 @@ fun CalendarScreen(tasks: List<Task>, onBack: () -> Unit) {
         }
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding).fillMaxSize().padding(16.dp)) {
-            // Month Navigation
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -265,7 +265,7 @@ fun CalendarScreen(tasks: List<Task>, onBack: () -> Unit) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Weekday Headers
+
             Row(modifier = Modifier.fillMaxWidth()) {
                 listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat").forEach { day ->
                     Text(
@@ -277,7 +277,7 @@ fun CalendarScreen(tasks: List<Task>, onBack: () -> Unit) {
                 }
             }
 
-            // Calendar Grid
+
             val totalCells = ((daysInMonth + firstDayOfMonth + 6) / 7) * 7
             Column {
                 for (row in 0 until totalCells / 7) {
@@ -373,7 +373,7 @@ fun TimetableScreen(onBack: () -> Unit) {
                         isLoading = true
                         errorMessage = null
                         try {
-                            // Counts Basic Auth Headers (api_key:)
+
                             val authData = "$MY_API_KEY:".toByteArray()
                             val authHeader = "Basic " + Base64.encodeToString(authData, Base64.NO_WRAP)
                             
