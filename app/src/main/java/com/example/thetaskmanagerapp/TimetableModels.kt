@@ -1,29 +1,83 @@
 package com.example.thetaskmanagerapp
 
+import com.google.gson.JsonDeserializationContext
+import com.google.gson.JsonDeserializer
+import com.google.gson.JsonElement
 import com.google.gson.annotations.SerializedName
+import java.lang.reflect.Type
+import java.time.LocalDate
+import java.time.LocalTime
 
-data class TimetableResponse(
-    val reservations: List<Reservation>
+// UI Model
+data class UIReservation(
+    val id: String,
+    val subject: String,
+    val date: LocalDate,
+    val startTime: LocalTime,
+    val endTime: LocalTime,
+    val description: String,
+    val location: String
 )
 
+// Navigation Model
+sealed class Screen {
+    object TaskList : Screen()
+    data class AddEditTask(val task: Task? = null) : Screen()
+    object DoneTasks : Screen()
+    object Calendar : Screen()
+    object Timetable : Screen()
+}
+
+// API Models
+data class TimetableResponse(
+    @SerializedName("reservations")
+    val reservationsList: List<Reservation> = emptyList(),
+    @SerializedName("data")
+    val data: List<Reservation>? = null
+) {
+    fun getReservations(): List<Reservation> = reservationsList.ifEmpty { data ?: emptyList() }
+}
+
 data class Reservation(
-    val id: String,
-    val subject: String?,
-    val description: String?,
-    val startDate: String,
-    val endDate: String,
-    val resources: List<Resource>?
+    @SerializedName("id") val id: String = "",
+    @SerializedName("subject") val subject: String? = null,
+    @SerializedName("description") val description: String? = null,
+    @SerializedName("startDate") val startDate: String = "",
+    @SerializedName("endDate") val endDate: String = "",
+    @SerializedName("resources") val resources: List<Resource>? = null
 )
 
 data class Resource(
-    val id: String,
-    val type: String,
-    val code: String?,
-    val name: String?
+    @SerializedName("id") val id: String,
+    @SerializedName("type") val type: String,
+    @SerializedName("code") val code: String?,
+    @SerializedName("name") val name: String?
 )
 
 data class TimetableRequest(
-    val rangeStart: String,
-    val rangeEnd: String,
-    val studentGroup: List<String>
+    @SerializedName("startDate") val startDate: String,
+    @SerializedName("endDate") val endDate: String,
+    @SerializedName("studentGroups") val studentGroups: List<String>? = null,
+    @SerializedName("studentGroup") val studentGroup: List<String>? = null,
+    @SerializedName("realization") val realization: List<String>? = null
 )
+
+class TimetableResponseDeserializer : JsonDeserializer<TimetableResponse> {
+    override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): TimetableResponse {
+        val reservations = mutableListOf<Reservation>()
+        try {
+            if (json.isJsonObject) {
+                val obj = json.asJsonObject
+                val arr = when {
+                    obj.has("reservations") -> obj.getAsJsonArray("reservations")
+                    obj.has("data") -> obj.getAsJsonArray("data")
+                    else -> null
+                }
+                arr?.forEach { reservations.add(context.deserialize(it, Reservation::class.java)) }
+            } else if (json.isJsonArray) {
+                json.asJsonArray.forEach { reservations.add(context.deserialize(it, Reservation::class.java)) }
+            }
+        } catch (e: Exception) {}
+        return TimetableResponse(reservationsList = reservations)
+    }
+}
