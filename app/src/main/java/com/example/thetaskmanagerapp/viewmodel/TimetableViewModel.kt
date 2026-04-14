@@ -1,4 +1,4 @@
-package com.example.thetaskmanagerapp
+package com.example.thetaskmanagerapp.viewmodel
 
 import android.util.Base64
 import android.util.Log
@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.thetaskmanagerapp.data.*
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -67,7 +68,6 @@ class TimetableViewModel : ViewModel() {
                 val authHeader = "Basic " + Base64.encodeToString("$apiKey:".toByteArray(), Base64.NO_WRAP)
                 val requestFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-                // We send both singular and plural fields to be safe
                 val request = TimetableRequest(
                     startDate = currentWeekStart.format(requestFormatter),
                     endDate = currentWeekStart.plusDays(7).format(requestFormatter),
@@ -76,8 +76,6 @@ class TimetableViewModel : ViewModel() {
 
                 val response = api.getTimetable(authHeader, request)
                 val reservations = response.getReservations()
-
-                Log.d("Timetable", "API returned ${reservations.size} raw items")
 
                 val itemFormatter = DateTimeFormatterBuilder()
                     .append(DateTimeFormatter.ISO_LOCAL_DATE)
@@ -89,12 +87,10 @@ class TimetableViewModel : ViewModel() {
                     .toFormatter()
 
                 uiData = reservations.mapNotNull { res ->
-                    // CLIENT-SIDE FILTERING: Ensures the reservations actually belong to the classCode
                     val resourceMatch = res.resources?.any { 
                         it.code?.equals(classCode, ignoreCase = true) == true 
                     } ?: false
                     
-                    // Also checks if subject or description contains the classCode
                     val textMatch = res.subject?.contains(classCode, ignoreCase = true) == true ||
                                    res.description?.contains(classCode, ignoreCase = true) == true
 
@@ -115,13 +111,10 @@ class TimetableViewModel : ViewModel() {
                     }
                 }.sortedWith(compareBy({ it.date }, { it.startTime }))
 
-                Log.d("Timetable", "After filtering: ${uiData.size} items")
-
                 if (uiData.isEmpty()) {
                     errorMessage = "No lessons found for $classCode this week."
                 }
             } catch (e: Exception) {
-                Log.e("Timetable", "Fetch failed", e)
                 errorMessage = "Error: ${e.localizedMessage}"
             } finally {
                 isLoading = false

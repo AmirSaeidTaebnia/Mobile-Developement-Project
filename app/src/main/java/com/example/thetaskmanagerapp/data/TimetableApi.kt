@@ -1,4 +1,4 @@
-package com.example.thetaskmanagerapp
+package com.example.thetaskmanagerapp.data
 
 import retrofit2.http.Body
 import retrofit2.http.Header

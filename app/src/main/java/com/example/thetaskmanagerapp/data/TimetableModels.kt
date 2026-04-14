@@ -1,4 +1,4 @@
-package com.example.thetaskmanagerapp
+package com.example.thetaskmanagerapp.data
 
 import com.google.gson.JsonDeserializationContext
 import com.google.gson.JsonDeserializer
@@ -26,6 +26,7 @@ sealed class Screen {
     object DoneTasks : Screen()
     object Calendar : Screen()
     object Timetable : Screen()
+    object Notifications : Screen() // 🔔 Nueva pantalla de notificaciones
 }
 
 // API Models
