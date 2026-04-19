@@ -113,15 +113,16 @@ fun CalendarScreen(tasks: List<Task>, onBack: () -> Unit) {
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(task.title, fontWeight = FontWeight.Bold)
-                            Text("Description: ${task.description}", fontSize = 14.sp)
-                            Text("Due Date: ${task.dueDate}", fontSize = 12.sp)
-                            Text("Status: ${task.status}", fontSize = 12.sp)
+                            Text("Description: ${task.description}", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+                            Text("Workload: ${task.workLoadInHours}h", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+                            Text("Due Date: ${task.dueDate}", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+                            Text("Status: ${task.status}", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
                 if (tasksForSelectedDay.isEmpty()) {
                     item {
-                        Text("No tasks for this day", modifier = Modifier.padding(top = 8.dp), color = Color.Gray, fontSize = 14.sp)
+                        Text("No tasks for this day", modifier = Modifier.padding(top = 8.dp), color = Color.Black, fontSize = 14.sp)
                     }
                 }
             }

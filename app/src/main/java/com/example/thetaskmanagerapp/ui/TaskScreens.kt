@@ -5,8 +5,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
@@ -17,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -153,7 +157,6 @@ fun TaskCard(task: Task, onEditTask: (Task) -> Unit, onDeleteTask: (Task) -> Uni
     ) {
         Row(
             modifier = Modifier
-                .clickable { onEditTask(task) }
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -176,6 +179,19 @@ fun TaskCard(task: Task, onEditTask: (Task) -> Unit, onDeleteTask: (Task) -> Uni
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = task.dueDate,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Icon(
+                        imageVector = Icons.Default.Build, 
+                        contentDescription = null, 
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.secondary
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "${task.workLoadInHours}h",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -204,6 +220,16 @@ fun TaskCard(task: Task, onEditTask: (Task) -> Unit, onDeleteTask: (Task) -> Uni
             
             Spacer(modifier = Modifier.width(8.dp))
             
+            // Dedicated Edit Button (Pen Icon)
+            IconButton(onClick = { onEditTask(task) }) {
+                Icon(
+                    imageVector = Icons.Default.Edit, 
+                    contentDescription = "Edit Task",
+                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                )
+            }
+
+            // Delete Button (Trash Icon)
             IconButton(onClick = { onDeleteTask(task) }) {
                 Icon(
                     imageVector = Icons.Default.Delete, 
@@ -296,6 +322,7 @@ fun AddEditTaskScreen(task: Task?, onSave: (Task) -> Unit, onCancel: () -> Unit)
     var description by remember { mutableStateOf(task?.description ?: "") }
     var dueDate by remember { mutableStateOf(task?.dueDate ?: LocalDate.now().toString()) }
     var status by remember { mutableStateOf(task?.status ?: "Pending") }
+    var workLoadInHours by remember { mutableStateOf(task?.workLoadInHours?.toString() ?: "0.0") }
 
     val statuses = listOf("Pending", "In Progress", "Done")
     var expanded by remember { mutableStateOf(false) }
@@ -314,7 +341,8 @@ fun AddEditTaskScreen(task: Task?, onSave: (Task) -> Unit, onCancel: () -> Unit)
             modifier = Modifier
                 .padding(innerPadding)
                 .padding(24.dp)
-                .fillMaxSize(),
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -340,16 +368,30 @@ fun AddEditTaskScreen(task: Task?, onSave: (Task) -> Unit, onCancel: () -> Unit)
                 minLines = 3
             )
 
-            OutlinedTextField(
-                value = dueDate,
-                onValueChange = { dueDate = it },
-                label = { Text("Due Date") },
-                placeholder = { Text("YYYY-MM-DD") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                leadingIcon = { Icon(imageVector = Icons.Default.DateRange, contentDescription = null) },
-                singleLine = true
-            )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                OutlinedTextField(
+                    value = dueDate,
+                    onValueChange = { dueDate = it },
+                    label = { Text("Due Date") },
+                    placeholder = { Text("YYYY-MM-DD") },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(20.dp),
+                    leadingIcon = { Icon(imageVector = Icons.Default.DateRange, contentDescription = null) },
+                    singleLine = true
+                )
+
+                OutlinedTextField(
+                    value = workLoadInHours,
+                    onValueChange = { workLoadInHours = it },
+                    label = { Text("Hours") },
+                    placeholder = { Text("0.0") },
+                    modifier = Modifier.weight(0.6f),
+                    shape = RoundedCornerShape(20.dp),
+                    leadingIcon = { Icon(imageVector = Icons.Default.Build, contentDescription = null) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true
+                )
+            }
 
             ExposedDropdownMenuBox(
                 expanded = expanded,
@@ -404,10 +446,20 @@ fun AddEditTaskScreen(task: Task?, onSave: (Task) -> Unit, onCancel: () -> Unit)
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = { onSave(Task(task?.id ?: 0, title, description, dueDate, status)) },
+                onClick = { 
+                    val hours = workLoadInHours.toDoubleOrNull() ?: 0.0
+                    onSave(Task(
+                        id = task?.id ?: 0, 
+                        title = title, 
+                        description = description, 
+                        dueDate = dueDate, 
+                        status = status,
+                        workLoadInHours = hours
+                    )) 
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(60.dp),

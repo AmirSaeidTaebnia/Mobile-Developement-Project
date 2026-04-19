@@ -11,6 +11,7 @@ data class Task(
     val description: String = "",
     val dueDate: String = "",
     val status: String = "Pending",
+    val workLoadInHours: Double = 0.0,
 
     // 🔔 NEW FIELDS (notification system)
     val hasUnreadNotification: Boolean = false,
