@@ -36,6 +36,8 @@ fun TaskListScreen(
     onNavigateToTimetable: () -> Unit,
     onNavigateToNotifications: () -> Unit
 ) {
+    var showTaskMenu by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -45,6 +47,11 @@ fun TaskListScreen(
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { /* Future Scanner */ }) {
+                        Icon(imageVector = Icons.Default.CameraAlt, contentDescription = "Scan Task")
+                    }
                 },
                 actions = {
                     NotificationIcon(notificationCount, onNavigateToNotifications)
@@ -57,11 +64,33 @@ fun TaskListScreen(
                 tonalElevation = 8.dp
             ) {
                 NavigationBarItem(
-                    icon = { Icon(imageVector = Icons.AutoMirrored.Filled.List, contentDescription = "Tasks") },
+                    icon = { 
+                        Box {
+                            Icon(imageVector = Icons.AutoMirrored.Filled.List, contentDescription = "Tasks")
+                            
+                            DropdownMenu(
+                                expanded = showTaskMenu,
+                                onDismissRequest = { showTaskMenu = false },
+                                modifier = Modifier.background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Camera Scanner") },
+                                    leadingIcon = { Icon(imageVector = Icons.Default.CameraAlt, contentDescription = null) },
+                                    onClick = { showTaskMenu = false }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Settings") },
+                                    leadingIcon = { Icon(imageVector = Icons.Default.Settings, contentDescription = null) },
+                                    onClick = { showTaskMenu = false }
+                                )
+                            }
+                        }
+                    },
                     label = { Text("Tasks", fontSize = 10.sp) },
                     selected = true,
-                    onClick = { }
+                    onClick = { showTaskMenu = !showTaskMenu }
                 )
+                
                 NavigationBarItem(
                     icon = { Icon(imageVector = Icons.Default.Add, contentDescription = "Add") },
                     label = { Text("Add", fontSize = 10.sp) },
@@ -141,13 +170,21 @@ fun TaskHeader() {
 
 @Composable
 fun TaskCard(task: Task, onEditTask: (Task) -> Unit, onDeleteTask: (Task) -> Unit) {
+    // Determine card background color based on workload
+    val cardColor = when (task.workload) {
+        5 -> Color(0xFFFFEBEE) // Very soft red for high difficulty
+        4 -> Color(0xFFFFF3E0) // Very soft orange
+        3 -> Color(0xFFFFFDE7) // Very soft yellow
+        else -> MaterialTheme.colorScheme.surface
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = cardColor
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -175,9 +212,21 @@ fun TaskCard(task: Task, onEditTask: (Task) -> Unit, onDeleteTask: (Task) -> Uni
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = task.dueDate,
+                        text = "Due: ${task.dueDate}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    // Load indicator with color logic
+                    Text(
+                        text = "Load: ${task.workload}/5",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = when(task.workload) {
+                            5 -> Color(0xFFC62828) // Stronger red text for high load
+                            4 -> Color(0xFFEF6C00) // Stronger orange text
+                            else -> MaterialTheme.colorScheme.secondary
+                        },
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
@@ -271,7 +320,7 @@ fun DoneTasksScreen(tasks: List<Task>, onBack: () -> Unit, onEditTask: (Task) ->
             TopAppBar(
                 title = { Text("Done Tasks") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                 }
             )
         }
@@ -296,9 +345,13 @@ fun AddEditTaskScreen(task: Task?, onSave: (Task) -> Unit, onCancel: () -> Unit)
     var description by remember { mutableStateOf(task?.description ?: "") }
     var dueDate by remember { mutableStateOf(task?.dueDate ?: LocalDate.now().toString()) }
     var status by remember { mutableStateOf(task?.status ?: "Pending") }
+    var workload by remember { mutableIntStateOf(task?.workload ?: 1) }
 
     val statuses = listOf("Pending", "In Progress", "Done")
-    var expanded by remember { mutableStateOf(false) }
+    val workloads = listOf(1, 2, 3, 4, 5)
+    
+    var expandedStatus by remember { mutableStateOf(false) }
+    var expandedWorkload by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = { 
@@ -326,8 +379,50 @@ fun AddEditTaskScreen(task: Task?, onSave: (Task) -> Unit, onCancel: () -> Unit)
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
                 leadingIcon = { Icon(imageVector = Icons.Default.Edit, contentDescription = null) },
+                trailingIcon = {
+                    IconButton(onClick = { /* Future Scanner */ }) {
+                        Icon(imageVector = Icons.Default.CameraAlt, contentDescription = "Scan")
+                    }
+                },
                 singleLine = true
             )
+
+            // Workload Selector (Dropdown Menu)
+            ExposedDropdownMenuBox(
+                expanded = expandedWorkload,
+                onExpandedChange = { expandedWorkload = !expandedWorkload },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = "Workload: $workload/5",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Workload") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expandedWorkload) },
+                    leadingIcon = { Icon(imageVector = Icons.Default.Speed, contentDescription = null) },
+                    modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    )
+                )
+                ExposedDropdownMenu(
+                    expanded = expandedWorkload,
+                    onDismissRequest = { expandedWorkload = false },
+                    modifier = Modifier.background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+                ) {
+                    workloads.forEach { level ->
+                        DropdownMenuItem(
+                            text = { Text("Level $level") },
+                            onClick = { 
+                                workload = level
+                                expandedWorkload = false 
+                            }
+                        )
+                    }
+                }
+            }
 
             OutlinedTextField(
                 value = description,
@@ -336,7 +431,7 @@ fun AddEditTaskScreen(task: Task?, onSave: (Task) -> Unit, onCancel: () -> Unit)
                 placeholder = { Text("Add more details...") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                leadingIcon = { Icon(imageVector = Icons.Default.Info, contentDescription = null) },
+                leadingIcon = { Icon(imageVector = Icons.AutoMirrored.Filled.MenuBook, contentDescription = null) },
                 minLines = 3
             )
 
@@ -352,8 +447,8 @@ fun AddEditTaskScreen(task: Task?, onSave: (Task) -> Unit, onCancel: () -> Unit)
             )
 
             ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded },
+                expanded = expandedStatus,
+                onExpandedChange = { expandedStatus = !expandedStatus },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 OutlinedTextField(
@@ -361,7 +456,7 @@ fun AddEditTaskScreen(task: Task?, onSave: (Task) -> Unit, onCancel: () -> Unit)
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Status") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expandedStatus) },
                     leadingIcon = { Icon(imageVector = Icons.Default.Info, contentDescription = null) },
                     modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
@@ -379,8 +474,8 @@ fun AddEditTaskScreen(task: Task?, onSave: (Task) -> Unit, onCancel: () -> Unit)
                     )
                 )
                 ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false },
+                    expanded = expandedStatus,
+                    onDismissRequest = { expandedStatus = false },
                     modifier = Modifier.background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
                 ) {
                     statuses.forEach { item ->
@@ -397,7 +492,7 @@ fun AddEditTaskScreen(task: Task?, onSave: (Task) -> Unit, onCancel: () -> Unit)
                             },
                             onClick = { 
                                 status = item
-                                expanded = false 
+                                expandedStatus = false 
                             }
                         )
                     }
@@ -407,7 +502,7 @@ fun AddEditTaskScreen(task: Task?, onSave: (Task) -> Unit, onCancel: () -> Unit)
             Spacer(modifier = Modifier.weight(1f))
 
             Button(
-                onClick = { onSave(Task(task?.id ?: 0, title, description, dueDate, status)) },
+                onClick = { onSave(Task(task?.id ?: 0, title, description, dueDate, status, workload = workload)) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(60.dp),
