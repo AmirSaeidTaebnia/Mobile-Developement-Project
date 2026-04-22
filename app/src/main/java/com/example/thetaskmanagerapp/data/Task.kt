@@ -17,6 +17,6 @@ data class Task(
     val notificationCount: Int = 0,
     val reminderEnabled: Boolean = true,
 
-    // Workload field (from 1 to 5)
-    val workload: Int = 1
+    // Workload field in hours (now Double for precision)
+    val workload: Double = 1.0
 )
