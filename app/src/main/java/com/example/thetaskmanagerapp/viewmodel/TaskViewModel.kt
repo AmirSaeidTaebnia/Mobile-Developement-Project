@@ -15,6 +15,11 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
     val doneTasks: Flow<List<Task>> = dao.getDoneTasks()
     val totalNotifications: Flow<Int?> = dao.getTotalNotificationCount()
 
+    // Logic to count pending tasks for a specific date
+    fun countPendingTasks(tasks: List<Task>, date: String): Int {
+        return tasks.count { it.dueDate == date && it.status != "Done" }
+    }
+
     fun insertTask(task: Task) {
         viewModelScope.launch {
             dao.insertTask(task)
