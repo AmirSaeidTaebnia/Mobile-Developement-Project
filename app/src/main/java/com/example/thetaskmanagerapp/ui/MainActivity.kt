@@ -1,14 +1,18 @@
 package com.example.thetaskmanagerapp.ui
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -16,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.thetaskmanagerapp.data.Screen
 import com.example.thetaskmanagerapp.ui.theme.TheTaskManagerAppTheme
@@ -54,9 +59,22 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     private var lightSensor: Sensor? = null
     private var isDarkBySensor by mutableStateOf(false)
 
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        // Permission granted or denied
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Request notification permission for Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
 
         // Initialize sensor manager and light sensor
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
@@ -103,9 +121,19 @@ fun TaskApp(
 ) {
     val tasks by taskViewModel.tasks.collectAsState(initial = emptyList())
     
-    // Automatic counter for today's unfinished tasks
+    // Automatic counter for today's tasks and high workload alerts
     val today = LocalDate.now().toString()
-    val notificationCount = tasks.count { it.dueDate == today && it.status != "Done" }
+    val notificationCount = tasks.count { 
+        val effort = try {
+            val d = LocalDate.parse(it.dueDate)
+            val days = java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), d)
+            if (days >= 0) it.workload / (days + 1) else 0.0
+        } catch (e: Exception) { 0.0 }
+
+        val isDueToday = it.dueDate == today && it.status != "Done"
+        val isHighWorkload = effort > 5.0 && it.status != "Done"
+        isDueToday || isHighWorkload
+    }
 
     // Navigation state
     var currentScreen by rememberSaveable(saver = ScreenSaver) { mutableStateOf(Screen.TaskList) }

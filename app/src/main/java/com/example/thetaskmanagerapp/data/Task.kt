@@ -11,6 +11,7 @@ data class Task(
     val description: String = "",
     val dueDate: String = "",
     val status: String = "Pending",
+    val priority: String = "Medium", // New field: Low, Medium, High
 
     // notification fields
     val hasUnreadNotification: Boolean = false,

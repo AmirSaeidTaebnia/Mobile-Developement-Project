@@ -12,9 +12,9 @@ class TaskLogicTest {
         // Given: a fixed date and a list of tasks
         val today = "2024-11-20"
         val tasks = listOf(
-            Task(id = 1, title = "Task 1", dueDate = today, status = "Pending"),
-            Task(id = 2, title = "Task 2", dueDate = today, status = "Done"),
-            Task(id = 3, title = "Task 3", dueDate = "2024-12-01", status = "Pending")
+            Task(id = 1, title = "Task 1", dueDate = today, status = "Pending", priority = "Medium"),
+            Task(id = 2, title = "Task 2", dueDate = today, status = "Done", priority = "Low"),
+            Task(id = 3, title = "Task 3", dueDate = "2024-12-01", status = "Pending", priority = "High")
         )
 
         // When: we calculate how many tasks are due today and not finished
